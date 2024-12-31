@@ -1,8 +1,8 @@
-// pages/api/profissionais.js
+// api/profissionais.js
 require('dotenv').config();
-const db = require('../../lib/db');
+const db = require('../lib/db');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,7 +12,6 @@ export default async function handler(req, res) {
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
-  // Responder a requisições OPTIONS (CORS preflight)
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -40,7 +39,7 @@ export default async function handler(req, res) {
     console.error('Erro na API:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
-      message: error.message
+      message: error.message 
     });
   }
-}
+};

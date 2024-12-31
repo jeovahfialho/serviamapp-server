@@ -1,18 +1,22 @@
 // api/profissionais.js
+require('dotenv').config();
 const db = require('../lib/db');
 
-// Handler compartilhado que funciona tanto no Express quanto na Vercel
-async function handleProfissionais(req, res) {
-  // CORS para desenvolvimento local
-  if (process.env.NODE_ENV !== 'production') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  }
+// Função principal que a Vercel vai chamar
+module.exports = async (req, res) => {
+  // Configurar CORS
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-  // Pré-flight para CORS
+  // Responder a requisições OPTIONS (CORS preflight)
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    res.status(200).end();
+    return;
   }
 
   try {
@@ -37,13 +41,7 @@ async function handleProfissionais(req, res) {
     console.error('Erro na API:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message
     });
   }
-}
-
-// Exportar o handler para uso no Express
-module.exports = { handleProfissionais };
-
-// Exportar a função padrão para a Vercel
-module.exports.default = handleProfissionais;
+};

@@ -1,9 +1,8 @@
-// api/profissionais.js
+// pages/api/profissionais.js
 require('dotenv').config();
-const db = require('../lib/db');
+const db = require('../../lib/db');
 
-// Função principal que a Vercel vai chamar
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -44,4 +43,4 @@ module.exports = async (req, res) => {
       message: error.message
     });
   }
-};
+}

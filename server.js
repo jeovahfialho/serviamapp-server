@@ -2,7 +2,7 @@
 require('dotenv').config(); // Adicione esta linha no início!
 const express = require('express');
 const cors = require('cors');
-const { handleProfissionais } = require('./api/profissionais');
+const { handleProfissionais } = require('./pages/api/profissionais');
 
 const app = express();
 const port = process.env.PORT || 3001;

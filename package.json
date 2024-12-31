@@ -1,7 +1,6 @@
 {
   "name": "serviam-app-server",
   "version": "1.0.0",
-  "description": "",
   "main": "api/profissionais.js",
   "scripts": {
     "dev": "vercel dev",
@@ -17,5 +16,17 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "pg": "^8.13.1"
-  }
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeovahfialho/serviamapp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jeovahfialho/serviamapp-server/issues"
+  },
+  "homepage": "https://github.com/jeovahfialho/serviamapp-server#readme",
+  "description": ""
 }

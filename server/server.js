@@ -8,12 +8,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+console.log('PGHOST:', process.env.PGHOST);
+
 // Rotas
 app.get('/api/profissionais', async (req, res) => {
   try {
     console.log('GET /api/profissionais chamado');  // <--- log simples
 
-    const query = 'SELECT * FROM profissionais_saude';
+    const query = 'SELECT * FROM profissionais';
     const { rows } = await pool.query(query);
 
     console.log('Dados retornados do banco:', rows.length, 'profissionais'); // <--- log de sucesso

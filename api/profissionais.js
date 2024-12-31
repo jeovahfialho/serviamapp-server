@@ -47,13 +47,39 @@ module.exports = async (req, res) => {
     } 
     
     if (req.method === 'POST') {
-      const { nome, tipo, especializacao } = req.body;
-      const result = await db.query(
-        'INSERT INTO profissionais (nome, tipo, especializacao) VALUES ($1, $2, $3) RETURNING *',
-        [nome, tipo, especializacao]
-      );
-      return res.status(201).json(result.rows[0]);
-    }
+      const {
+        tipo, nome, foto, registro, telefone, especializacao,
+        graduacao, pos_graduacao, cursos, atuacao,
+        valor, planos, atendimentoonline,
+        atendimentoemergencia, atendimentopresencial
+      } = req.body;
+    
+      try {
+        const result = await db.query(
+          `INSERT INTO profissionais (
+            tipo, nome, foto, registro, telefone, especializacao,
+            graduacao, pos_graduacao, cursos, atuacao,
+            valor, planos, atendimentoonline,
+            atendimentoemergencia, atendimentopresencial
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+          RETURNING *`,
+          [
+            tipo, nome, foto, registro, telefone, especializacao,
+            graduacao, pos_graduacao, cursos, atuacao,
+            valor, planos, atendimentoonline,
+            atendimentoemergencia, atendimentopresencial
+          ]
+        );
+        
+        return res.status(201).json(result.rows[0]);
+      } catch (error) {
+        console.error('Erro ao inserir profissional:', error);
+        return res.status(500).json({ 
+          error: 'Erro ao cadastrar profissional',
+          message: error.message 
+        });
+      }
+    }z
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {

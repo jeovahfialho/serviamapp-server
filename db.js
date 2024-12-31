@@ -1,7 +1,11 @@
-require('dotenv').config();
+// db.js
 const { Pool } = require('pg');
 
-// Aqui lemos as variáveis do arquivo .env
+// Em dev local, se quiser usar dotenv:
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 const pool = new Pool({
   host: process.env.PGHOST,
   user: process.env.PGUSER,

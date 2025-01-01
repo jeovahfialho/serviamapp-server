@@ -22,27 +22,22 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       console.log('GET /api/profissionais chamado');
       
-      // Construir query base
-      let queryText = 'SELECT * FROM profissionais';
-      const queryParams = [];
-      
-      // Adicionar filtros se existirem
-      if (req.query) {
-        const filters = [];
+      // Modificar query base para incluir apenas status approved
+      let queryText = "SELECT * FROM profissionais WHERE status = 'approved'";
+      let queryParams = [];
+
+      // Adicionar filtros adicionais se existirem
+      if (req.query && Object.keys(req.query).length > 0) {
         Object.entries(req.query).forEach(([key, value], index) => {
           if (value) {
-            filters.push(`${key} = $${index + 1}`);
+            queryText += ` AND ${key} = $${index + 1}`;
             queryParams.push(value);
           }
         });
-        
-        if (filters.length > 0) {
-          queryText += ' WHERE ' + filters.join(' AND ');
-        }
       }
-      
+        
       const { rows } = await db.query(queryText, queryParams);
-      console.log(`Retornados ${rows.length} profissionais`);
+      console.log(`Retornados ${rows.length} profissionais aprovados`);
       return res.status(200).json(rows);
     } 
     
@@ -51,7 +46,7 @@ module.exports = async (req, res) => {
         tipo, nome, foto, registro, telefone, especializacao,
         graduacao, pos_graduacao, cursos, atuacao,
         valor, planos, atendimentoonline,
-        atendimentoemergencia, atendimentopresencial
+        atendimentoemergencia, atendimentopresencial, status
       } = req.body;
     
       try {
@@ -60,14 +55,14 @@ module.exports = async (req, res) => {
             tipo, nome, foto, registro, telefone, especializacao,
             graduacao, pos_graduacao, cursos, atuacao,
             valor, planos, atendimentoonline,
-            atendimentoemergencia, atendimentopresencial
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+            atendimentoemergencia, atendimentopresencial, status
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
           RETURNING *`,
           [
             tipo, nome, foto, registro, telefone, especializacao,
             graduacao, pos_graduacao, cursos, atuacao,
             valor, planos, atendimentoonline,
-            atendimentoemergencia, atendimentopresencial
+            atendimentoemergencia, atendimentopresencial, status
           ]
         );
         

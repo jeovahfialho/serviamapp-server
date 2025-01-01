@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
       console.log('GET /api/profissionais chamado');
       
       // Modificar query base para incluir apenas status approved
-      let queryText = "SELECT * FROM profissionais WHERE status = 'approved'";
+      let queryText = "SELECT * FROM profissionais";
       let queryParams = [];
 
       // Adicionar filtros adicionais se existirem

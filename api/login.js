@@ -11,30 +11,37 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { telefone, password } = req.body;
+  console.log('Tentativa de login:', { telefone });
+  
 
   try {
-    // Primeiro, busca o profissional para confirmar que existe
-    const { data: profissional } = await supabase
+    // Log profissional
+    const { data: profissional, error: profError } = await supabase
       .from('profissionais')
       .select('*')
       .eq('telefone', telefone)
       .single();
-
+ 
+    console.log('Profissional encontrado:', profissional);
+    if (profError) console.log('Erro busca profissional:', profError);
+ 
     if (!profissional) {
       return res.status(401).json({
         error: 'Auth error',
-        message: 'Credenciais inválidas'
+        message: 'Profissional não encontrado'
       });
     }
-
-    // Tenta autenticar com o email temporário
+ 
+    // Tenta login
     const { data, error } = await supabase.auth.signInWithPassword({
       email: `${telefone}@temp.com`,
       password
     });
-
+ 
+    console.log('Resposta auth:', { data, error });
+ 
     if (error) throw error;
-
+ 
     return res.json({
       token: data.session.access_token,
       user: {
@@ -42,11 +49,12 @@ module.exports = async (req, res) => {
         ...profissional
       }
     });
-
+ 
   } catch (error) {
+    console.log('Erro completo:', error);
     return res.status(401).json({
-      error: 'Auth error',
-      message: 'Credenciais inválidas'
+      error: 'Auth error', 
+      message: error.message || 'Credenciais inválidas'
     });
   }
 };

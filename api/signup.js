@@ -1,25 +1,27 @@
 // api/signup.js
 require('dotenv').config();
-const { supabase } = require('../lib/db');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+ process.env.SUPABASE_URL,
+ process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 module.exports = async (req, res) => {
- // CORS headers
  res.setHeader('Access-Control-Allow-Credentials', true);
  res.setHeader('Access-Control-Allow-Origin', '*');
  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
- // Handle OPTIONS
  if (req.method === 'OPTIONS') {
    return res.status(200).end();
  }
 
- // Only allow POST
  if (req.method !== 'POST') {
    return res.status(405).json({ error: 'Method not allowed' });
  }
 
- const { telefone, password, tipo } = req.body;
+ const { telefone, password } = req.body;
 
  try {
    // Create auth user
@@ -28,14 +30,17 @@ module.exports = async (req, res) => {
      password,
      phone: telefone,
      options: {
-       data: { 
-         telefone,
-         tipo 
-       }
+       data: { telefone }
      }
    });
 
    if (authError) throw authError;
+
+   // Confirm email automatically using admin client
+   await supabase.auth.admin.updateUserById(
+     authData.user.id, 
+     { email_confirmed_at: new Date().toISOString() }
+   );
 
    // Create professional record
    const { data: profissionalData, error: dbError } = await supabase

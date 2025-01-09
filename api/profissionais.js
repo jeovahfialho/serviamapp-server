@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Credentials': true,
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,OPTIONS,POST,PUT,DELETE',
-  'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
 };
 
 // Funções auxiliares
@@ -90,7 +90,7 @@ const handlePost = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('profissionais')
-      .insert([{
+      .update({
         tipo,
         nome,
         cpf,
@@ -111,29 +111,21 @@ const handlePost = async (req, res) => {
         atendimentopresencial,
         status,
         lgpd_consent: lgpdConsent,
-        user_id,        // Nova coluna
-        created_at: new Date(),
         updated_at: new Date()
-      }])
+      })
+      .eq('user_id', user_id)  // Condição para atualizar baseado no user_id
       .select()
       .single();
 
     if (error) {
-      // Tratamento específico de erros do Supabase
-      if (error.code === '23505') {
-        return res.status(409).json({
-          error: 'Conflito',
-          message: 'CPF ou e-mail já cadastrado'
-        });
-      }
-      console.error('Erro no insert Supabase:', error);
+      console.error('Erro no update Supabase:', error);
       return res.status(500).json({
         error: 'Database error',
         message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
       });
     }
 
-    return res.status(201).json(data);
+    return res.status(200).json(data);
   } catch (error) {
     console.error('Erro no handlePost:', error);
     return res.status(500).json({

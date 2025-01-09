@@ -1,6 +1,6 @@
 // api/profissionais.js
 require('dotenv').config();
-const db = require('../lib/db');
+const { supabase, supabaseQuery } = require('../lib/db');
 
 // Configurações CORS
 const corsHeaders = {
@@ -20,35 +20,26 @@ const setCorsHeaders = (res) => {
 // Handlers específicos para cada método
 const handleGet = async (req, res) => {
   try {
-    // Query base com status approved
-    const baseQuery = `
-      SELECT * FROM profissionais 
-      WHERE TRIM('"' FROM status) = 'approved'
-    `;
-    
-    // Construção dinâmica de filtros
-    const filters = [];
-    const values = [];
-    let paramCount = 1;
+    let query = supabase
+      .from('profissionais')
+      .select('*')
+      .eq('status', 'approved');
 
+    // Adiciona filtros dinâmicos baseados nos query params
     if (req.query) {
       Object.entries(req.query).forEach(([key, value]) => {
         if (value) {
-          filters.push(`${key} = $${paramCount}`);
-          values.push(value);
-          paramCount++;
+          query = query.eq(key, value);
         }
       });
     }
 
-    // Montagem da query final
-    const queryText = filters.length > 0
-      ? `${baseQuery} AND ${filters.join(' AND ')}`
-      : baseQuery;
+    const { data, error, count } = await query;
 
-    const { rows } = await db.query(queryText, values);
-    console.log(`Retornados ${rows.length} profissionais aprovados`);
-    return res.status(200).json(rows);
+    if (error) throw error;
+
+    console.log(`Retornados ${count} profissionais aprovados`);
+    return res.status(200).json(data);
   } catch (error) {
     throw error;
   }
@@ -56,44 +47,55 @@ const handleGet = async (req, res) => {
 
 const handlePost = async (req, res) => {
   const {
-    tipo, nome, cpf, email, foto, registro, telefone, 
-    especializacao, graduacao, pos_graduacao, cursos, 
+    tipo, nome, cpf, email, foto, registro, telefone,
+    especializacao, graduacao, pos_graduacao, cursos,
     atuacao, valor, planos, atendimentoonline,
-    atendimentoemergencia, atendimentopresencial, 
+    atendimentoemergencia, atendimentopresencial,
     status, lgpdConsent
   } = req.body;
 
   try {
-    const result = await db.query(
-      `INSERT INTO profissionais (
-        tipo, nome, cpf, email, foto, registro, telefone,
-        especializacao, graduacao, pos_graduacao, cursos,
-        atuacao, valor, planos, atendimentoonline,  
-        atendimentoemergencia, atendimentopresencial,
-        status, lgpd_consent, created_at, updated_at
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15, $16, $17, $18, $19,
-        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-      ) RETURNING *`,
-      [
-        tipo, nome, cpf, email, foto, registro, telefone,
-        especializacao, graduacao, pos_graduacao, cursos,
-        atuacao, valor, planos, atendimentoonline,
-        atendimentoemergencia, atendimentopresencial,
-        status, lgpdConsent
-      ]
-    );
+    const { data, error } = await supabase
+      .from('profissionais')
+      .insert([{
+        tipo,
+        nome,
+        cpf,
+        email,
+        foto,
+        registro,
+        telefone,
+        especializacao,
+        graduacao,
+        pos_graduacao: pos_graduacao,
+        cursos,
+        atuacao,
+        valor,
+        planos,
+        atendimentoonline,
+        atendimentoemergencia,
+        atendimentopresencial,
+        status,
+        lgpd_consent: lgpdConsent,
+        created_at: new Date(),
+        updated_at: new Date()
+      }])
+      .select()
+      .single();
 
-    return res.status(201).json(result.rows[0]);
-  } catch (error) {
-    // Tratamento específico de erros
-    if (error.code === '23505') { // Violação de chave única
-      return res.status(409).json({
-        error: 'Conflito',
-        message: 'CPF ou e-mail já cadastrado'
-      });
+    if (error) {
+      // Tratamento específico de erros do Supabase
+      if (error.code === '23505') {
+        return res.status(409).json({
+          error: 'Conflito',
+          message: 'CPF ou e-mail já cadastrado'
+        });
+      }
+      throw error;
     }
+
+    return res.status(201).json(data);
+  } catch (error) {
     throw error;
   }
 };
@@ -119,10 +121,10 @@ module.exports = async (req, res) => {
     }
   } catch (error) {
     console.error('Erro na API:', error);
-    const errorMessage = process.env.NODE_ENV === 'development' 
-      ? error.message 
+    const errorMessage = process.env.NODE_ENV === 'development'
+      ? error.message
       : 'Ocorreu um erro interno';
-      
+    
     return res.status(500).json({
       error: 'Internal server error',
       message: errorMessage

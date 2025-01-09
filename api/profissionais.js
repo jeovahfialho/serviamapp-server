@@ -1,6 +1,6 @@
 // api/profissionais.js
 require('dotenv').config();
-const { supabase, supabaseQuery } = require('../lib/db');
+const { supabase } = require('../lib/db');
 
 // Configurações CORS
 const corsHeaders = {
@@ -22,30 +22,7 @@ const handleGet = async (req, res) => {
   try {
     let query = supabase
       .from('profissionais')
-      .select(`
-        id,
-        tipo,
-        nome,
-        foto,
-        especializacao,
-        graduacao,
-        pos_graduacao,
-        cursos,
-        atuacao,
-        faixa_etaria,
-        valor,
-        planos,
-        registro,
-        pontuacao,
-        referencias,
-        atendimentoonline,
-        atendimentoemergencia,
-        atendimentopresencial,
-        email,
-        telefone,
-        created_at,
-        updated_at
-      `)
+      .select('*')
       .eq('status', 'approved');
 
     // Adiciona filtros dinâmicos baseados nos query params
@@ -57,7 +34,7 @@ const handleGet = async (req, res) => {
       });
     }
 
-    const { data, error, count } = await query;
+    const { data, error } = await query;
 
     if (error) {
       console.error('Erro na query Supabase:', error);
@@ -103,7 +80,7 @@ const handlePost = async (req, res) => {
         pos_graduacao,
         cursos,
         atuacao,
-        faixa_etaria,  // Nova coluna
+        faixa_etaria,
         valor,
         planos,
         atendimentoonline,
@@ -111,7 +88,7 @@ const handlePost = async (req, res) => {
         atendimentopresencial,
         status,
         lgpd_consent: lgpdConsent,
-        user_id,        // Nova coluna
+        user_id,
         created_at: new Date(),
         updated_at: new Date()
       }])
@@ -119,7 +96,6 @@ const handlePost = async (req, res) => {
       .single();
 
     if (error) {
-      // Tratamento específico de erros do Supabase
       if (error.code === '23505') {
         return res.status(409).json({
           error: 'Conflito',
@@ -143,9 +119,62 @@ const handlePost = async (req, res) => {
   }
 };
 
-// Handler principal
+const handleSignUp = async (req, res) => {
+  const { telefone, password, tipo } = req.body;
+
+  try {
+    // 1. Criar usuário no Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: `${telefone}@temp.com`, // temporário, já que Supabase exige email
+      password,
+      phone: telefone,
+      options: {
+        data: { 
+          telefone,
+          tipo
+        }
+      }
+    });
+
+    if (authError) throw authError;
+
+    // 2. Criar registro na tabela de profissionais
+    const { data: profissionalData, error: dbError } = await supabase
+      .from('profissionais')
+      .insert([{
+        telefone,
+        tipo,
+        user_id: authData.user.id,
+        status: 'pending'
+      }])
+      .select()
+      .single();
+
+    if (dbError) throw dbError;
+
+    return res.status(201).json({
+      message: 'Conta criada com sucesso',
+      data: profissionalData
+    });
+
+  } catch (error) {
+    console.error('Erro no signup:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({
+        error: 'Conflito',
+        message: 'Telefone já cadastrado'
+      });
+    }
+    return res.status(400).json({
+      error: 'Signup error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro ao criar conta'
+    });
+  }
+};
+
+// Handler principal (este é o handler principal que você perguntou)
 module.exports = async (req, res) => {
-  // Configurar CORS - Aplicado no início, antes de qualquer processamento
+  // Configurar CORS
   setCorsHeaders(res);
 
   // Responder a requisições OPTIONS (CORS preflight)
@@ -158,16 +187,20 @@ module.exports = async (req, res) => {
       case 'GET':
         return await handleGet(req, res);
       case 'POST':
+        // Se for rota de signup
+        if (req.url.endsWith('/signup')) {
+          return await handleSignUp(req, res);
+        }
+        // Se for POST normal
         return await handlePost(req, res);
       default:
         return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
-    // Mesmo em caso de erro não tratado, os headers CORS já foram definidos
     console.error('Erro não tratado na API:', error);
     return res.status(500).json({
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
     });
   }
-}; 
+};

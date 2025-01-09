@@ -22,7 +22,30 @@ const handleGet = async (req, res) => {
   try {
     let query = supabase
       .from('profissionais')
-      .select('*')
+      .select(`
+        id,
+        tipo,
+        nome,
+        foto,
+        especializacao,
+        graduacao,
+        pos_graduacao,
+        cursos,
+        atuacao,
+        faixa_etaria,
+        valor,
+        planos,
+        registro,
+        pontuacao,
+        referencias,
+        atendimentoonline,
+        atendimentoemergencia,
+        atendimentopresencial,
+        email,
+        telefone,
+        created_at,
+        updated_at
+      `)
       .eq('status', 'approved');
 
     // Adiciona filtros dinâmicos baseados nos query params
@@ -59,9 +82,9 @@ const handlePost = async (req, res) => {
   const {
     tipo, nome, cpf, email, foto, registro, telefone,
     especializacao, graduacao, pos_graduacao, cursos,
-    atuacao, valor, planos, atendimentoonline,
+    atuacao, faixa_etaria, valor, planos, atendimentoonline,
     atendimentoemergencia, atendimentopresencial,
-    status, lgpdConsent
+    status, lgpdConsent, user_id
   } = req.body;
 
   try {
@@ -77,9 +100,10 @@ const handlePost = async (req, res) => {
         telefone,
         especializacao,
         graduacao,
-        pos_graduacao: pos_graduacao,
+        pos_graduacao,
         cursos,
         atuacao,
+        faixa_etaria,  // Nova coluna
         valor,
         planos,
         atendimentoonline,
@@ -87,6 +111,7 @@ const handlePost = async (req, res) => {
         atendimentopresencial,
         status,
         lgpd_consent: lgpdConsent,
+        user_id,        // Nova coluna
         created_at: new Date(),
         updated_at: new Date()
       }])

@@ -2,22 +2,19 @@
 require('dotenv').config();
 const { supabase, supabaseQuery } = require('../lib/db');
 
-// Configurações CORS mais permissivas para desenvolvimento
-const allowCors = fn => async (req, res) => {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
-  );
+// Configurações CORS
+const corsHeaders = {
+  'Access-Control-Allow-Credentials': true,
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,OPTIONS,POST,PUT,DELETE',
+  'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+};
 
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  return await fn(req, res);
+// Funções auxiliares
+const setCorsHeaders = (res) => {
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
 };
 
 // Handlers específicos para cada método
@@ -103,8 +100,16 @@ const handlePost = async (req, res) => {
   }
 };
 
-// Handler principal sem o wrapper de CORS (será adicionado depois)
-const handler = async (req, res) => {
+// Handler principal
+module.exports = async (req, res) => {
+  // Configurar CORS
+  setCorsHeaders(res);
+
+  // Responder a requisições OPTIONS (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
     switch (req.method) {
       case 'GET':
@@ -126,6 +131,3 @@ const handler = async (req, res) => {
     });
   }
 };
-
-// Exporta o handler com o wrapper de CORS
-module.exports = allowCors(handler);

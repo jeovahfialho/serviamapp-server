@@ -42,7 +42,6 @@ module.exports = async (req, res) => {
      .from('profissionais')
      .insert([{
        telefone,
-       tipo,
        user_id: authData.user.id,
        status: 'pending'
      }])

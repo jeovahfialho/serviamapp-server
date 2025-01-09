@@ -36,12 +36,22 @@ const handleGet = async (req, res) => {
 
     const { data, error, count } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erro na query Supabase:', error);
+      return res.status(500).json({
+        error: 'Database error',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
+      });
+    }
 
-    console.log(`Retornados ${count} profissionais aprovados`);
+    console.log(`Retornados ${data?.length || 0} profissionais aprovados`);
     return res.status(200).json(data);
   } catch (error) {
-    throw error;
+    console.error('Erro no handleGet:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
+    });
   }
 };
 
@@ -91,18 +101,26 @@ const handlePost = async (req, res) => {
           message: 'CPF ou e-mail já cadastrado'
         });
       }
-      throw error;
+      console.error('Erro no insert Supabase:', error);
+      return res.status(500).json({
+        error: 'Database error',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
+      });
     }
 
     return res.status(201).json(data);
   } catch (error) {
-    throw error;
+    console.error('Erro no handlePost:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
+    });
   }
 };
 
 // Handler principal
 module.exports = async (req, res) => {
-  // Configurar CORS
+  // Configurar CORS - Aplicado no início, antes de qualquer processamento
   setCorsHeaders(res);
 
   // Responder a requisições OPTIONS (CORS preflight)
@@ -120,14 +138,11 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
-    console.error('Erro na API:', error);
-    const errorMessage = process.env.NODE_ENV === 'development'
-      ? error.message
-      : 'Ocorreu um erro interno';
-    
+    // Mesmo em caso de erro não tratado, os headers CORS já foram definidos
+    console.error('Erro não tratado na API:', error);
     return res.status(500).json({
       error: 'Internal server error',
-      message: errorMessage
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
     });
   }
 };

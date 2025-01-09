@@ -145,4 +145,4 @@ module.exports = async (req, res) => {
       message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
     });
   }
-};
+}; 

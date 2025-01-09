@@ -68,7 +68,7 @@ const handlePost = async (req, res) => {
       `INSERT INTO profissionais (
         tipo, nome, cpf, email, foto, registro, telefone,
         especializacao, graduacao, pos_graduacao, cursos,
-        atuacao, valor, planos, atendimentoonline,
+        atuacao, valor, planos, atendimentoonline,  
         atendimentoemergencia, atendimentopresencial,
         status, lgpd_consent, created_at, updated_at
       ) VALUES (

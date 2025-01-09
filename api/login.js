@@ -13,6 +13,21 @@ module.exports = async (req, res) => {
   const { telefone, password } = req.body;
 
   try {
+    // Primeiro, busca o profissional para confirmar que existe
+    const { data: profissional } = await supabase
+      .from('profissionais')
+      .select('*')
+      .eq('telefone', telefone)
+      .single();
+
+    if (!profissional) {
+      return res.status(401).json({
+        error: 'Auth error',
+        message: 'Credenciais inválidas'
+      });
+    }
+
+    // Tenta autenticar com o email temporário
     const { data, error } = await supabase.auth.signInWithPassword({
       email: `${telefone}@temp.com`,
       password
@@ -22,7 +37,10 @@ module.exports = async (req, res) => {
 
     return res.json({
       token: data.session.access_token,
-      user: data.user
+      user: {
+        ...data.user,
+        ...profissional
+      }
     });
 
   } catch (error) {

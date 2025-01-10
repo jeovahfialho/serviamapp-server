@@ -88,6 +88,14 @@ const handlePost = async (req, res) => {
   } = req.body;
 
   try {
+
+     // Log dos dados antes do update
+     console.log('Preparando update com:', {
+        atendimentoonline,
+        atendimentoemergencia,
+        atendimentopresencial
+      });
+
     const { data, error } = await supabase
       .from('profissionais')
       .update({

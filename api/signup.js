@@ -36,12 +36,6 @@ module.exports = async (req, res) => {
 
    if (authError) throw authError;
 
-   // Confirm email automatically using admin client
-   await supabase.auth.admin.updateUserById(
-     authData.user.id, 
-     { email_confirmed_at: new Date().toISOString() }
-   );
-
    // Create professional record
    const { data: profissionalData, error: dbError } = await supabase
      .from('profissionais')

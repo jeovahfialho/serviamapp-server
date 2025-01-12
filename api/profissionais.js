@@ -90,6 +90,45 @@ const handleGet = async (req, res) => {
   }
 };
 
+const handlePatch = async (req, res) => {
+  const { id, status, verificado } = req.body;
+
+  if (!id) {
+    return res.status(400).json({
+      error: 'Missing id',
+      message: 'ID do profissional é obrigatório'
+    });
+  }
+
+  try {
+    const updateData = {};
+    if (status !== undefined) updateData.status = status;
+    if (verificado !== undefined) updateData.verificado = verificado;
+
+    const { data, error } = await supabase
+      .from('profissionais')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro no update Supabase:', error);
+      return res.status(500).json({
+        error: 'Database error',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
+      });
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Erro no handlePatch:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
+    });
+  }
+};
 
 const handlePost = async (req, res) => {
   const {
@@ -174,6 +213,8 @@ module.exports = async (req, res) => {
         return await handleGet(req, res);
       case 'POST':
         return await handlePost(req, res);
+      case 'PATCH':
+        return await handlePatch(req, res);
       default:
         return res.status(405).json({ error: 'Method not allowed' });
     }

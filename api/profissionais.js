@@ -43,6 +43,7 @@ const handleGet = async (req, res) => {
         atendimentopresencial,
         email,
         telefone,
+        status,
         created_at,
         updated_at,
         bairro,     
@@ -51,13 +52,18 @@ const handleGet = async (req, res) => {
         instagram,  
         sexo,
         verificado      
-      `)
-      .eq('status', 'approved');
+      `);
 
-    // Adiciona filtros dinâmicos baseados nos query params
+    // Se não for uma requisição admin, mantém o filtro de approved
+    if (!req.query.isAdmin) {
+      query = query.eq('status', 'approved');
+    }
+
+    // Adiciona outros filtros dinâmicos baseados nos query params
     if (req.query) {
       Object.entries(req.query).forEach(([key, value]) => {
-        if (value) {
+        // Ignora o parâmetro isAdmin no filtro
+        if (value && key !== 'isAdmin') {
           query = query.eq(key, value);
         }
       });
@@ -73,7 +79,7 @@ const handleGet = async (req, res) => {
       });
     }
 
-    console.log(`Retornados ${data?.length || 0} profissionais aprovados`);
+    console.log(`Retornados ${data?.length || 0} profissionais`);
     return res.status(200).json(data);
   } catch (error) {
     console.error('Erro no handleGet:', error);
@@ -83,6 +89,7 @@ const handleGet = async (req, res) => {
     });
   }
 };
+
 
 const handlePost = async (req, res) => {
   const {

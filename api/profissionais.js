@@ -44,7 +44,13 @@ const handleGet = async (req, res) => {
         email,
         telefone,
         created_at,
-        updated_at
+        updated_at,
+        bairro,     
+        cidade,     
+        estado,    
+        instagram,  
+        sexo,
+        verificado      
       `)
       .eq('status', 'approved');
 
@@ -84,17 +90,12 @@ const handlePost = async (req, res) => {
     especializacao, graduacao, pos_graduacao, cursos,
     atuacao, faixa_etaria, valor, planos, atendimentoonline,
     atendimentoemergencia, atendimentopresencial,
-    status, lgpdConsent, user_id
+    status, lgpdConsent, user_id,
+    bairro, cidade, estado, instagram, sexo,
+    verificado  // novos campos no destructuring
   } = req.body;
 
   try {
-
-     // Log dos dados antes do update
-     console.log('Preparando update com:', {
-        atendimentoonline,
-        atendimentoemergencia,
-        atendimentopresencial
-      });
 
     const { data, error } = await supabase
       .from('profissionais')
@@ -111,7 +112,7 @@ const handlePost = async (req, res) => {
         pos_graduacao,
         cursos,
         atuacao,
-        faixa_etaria,  // Nova coluna
+        faixa_etaria,
         valor,
         planos,
         atendimentoonline,
@@ -119,11 +120,18 @@ const handlePost = async (req, res) => {
         atendimentopresencial,
         status,
         lgpd_consent: lgpdConsent,
+        bairro,     // novo campo
+        cidade,     // novo campo
+        estado,     // novo campo
+        instagram,  // novo campo
+        sexo,
+        verificado,       // novo campo
         updated_at: new Date()
       })
-      .eq('user_id', user_id)  // Condição para atualizar baseado no user_id
+      .eq('user_id', user_id)
       .select()
       .single();
+
 
     if (error) {
       console.error('Erro no update Supabase:', error);

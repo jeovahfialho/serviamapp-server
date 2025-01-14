@@ -20,39 +20,10 @@ const setCorsHeaders = (res) => {
 // Handlers específicos para cada método
 const handleGet = async (req, res) => {
   try {
+    // Primeiro, vamos buscar os profissionais
     let query = supabase
       .from('profissionais')
-      .select(`
-        id,
-        tipo,
-        nome,
-        foto,
-        especializacao,
-        graduacao,
-        pos_graduacao,
-        cursos,
-        atuacao,
-        faixa_etaria,
-        valor,
-        planos,
-        registro,
-        atendimentoonline,
-        atendimentoemergencia,
-        atendimentopresencial,
-        email,
-        telefone,
-        status,
-        created_at,
-        updated_at,
-        bairro,     
-        cidade,     
-        estado,    
-        instagram,  
-        sexo,
-        verificado,
-        pontuacao: reviews(rating, status).avg(rating).filter(status.eq('approved')),
-        referencias: reviews(status).count().filter(status.eq('approved'))      
-      `);
+      .select('*');
 
     // Se não for uma requisição admin, mantém o filtro de approved
     if (!req.query.isAdmin) {
@@ -62,24 +33,20 @@ const handleGet = async (req, res) => {
     // Adiciona outros filtros dinâmicos baseados nos query params
     if (req.query) {
       Object.entries(req.query).forEach(([key, value]) => {
-        // Ignora o parâmetro isAdmin no filtro
         if (value && key !== 'isAdmin') {
           query = query.eq(key, value);
         }
       });
     }
 
-    const { data, error, count } = await query;
+    const { data: profissionais, error } = await query;
 
     if (error) {
       console.error('Erro na query Supabase:', error);
-      return res.status(500).json({
-        error: 'Database error',
-        message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
-      });
+      return res.status(500).json([]);
     }
 
-    // Agora vamos calcular a média e contagem manualmente
+    // Agora vamos buscar todos os reviews aprovados
     const { data: reviewsData, error: reviewsError } = await supabase
       .from('reviews')
       .select('prof_id, rating')
@@ -87,14 +54,11 @@ const handleGet = async (req, res) => {
 
     if (reviewsError) {
       console.error('Erro ao buscar reviews:', reviewsError);
-      return res.status(500).json({
-        error: 'Database error',
-        message: process.env.NODE_ENV === 'development' ? reviewsError.message : 'Erro interno'
-      });
+      return res.status(500).json([]);
     }
 
     // Agrupa os reviews por profissional
-    const reviewsByProf = reviewsData.reduce((acc, review) => {
+    const reviewsByProf = (reviewsData || []).reduce((acc, review) => {
       if (!acc[review.prof_id]) {
         acc[review.prof_id] = {
           ratings: [],
@@ -107,7 +71,7 @@ const handleGet = async (req, res) => {
     }, {});
 
     // Formata os dados dos profissionais com as médias calculadas
-    const formattedData = profissionais.map(prof => {
+    const formattedData = (profissionais || []).map(prof => {
       const profReviews = reviewsByProf[prof.id] || { ratings: [], count: 0 };
       const avgRating = profReviews.ratings.length > 0
         ? profReviews.ratings.reduce((a, b) => a + b, 0) / profReviews.ratings.length
@@ -120,14 +84,12 @@ const handleGet = async (req, res) => {
       };
     });
 
-    console.log(`Retornados ${data?.length || 0} profissionais`);
-    return res.status(200).json(data);
+    // Sempre retorna um array, mesmo que vazio
+    return res.status(200).json(formattedData || []);
   } catch (error) {
     console.error('Erro no handleGet:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
-    });
+    // Em caso de erro, retorna array vazio
+    return res.status(500).json([]);
   }
 };
 

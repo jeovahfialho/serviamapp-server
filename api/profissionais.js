@@ -36,8 +36,6 @@ const handleGet = async (req, res) => {
         valor,
         planos,
         registro,
-        pontuacao,
-        referencias,
         atendimentoonline,
         atendimentoemergencia,
         atendimentopresencial,
@@ -51,7 +49,9 @@ const handleGet = async (req, res) => {
         estado,    
         instagram,  
         sexo,
-        verificado      
+        verificado,
+        pontuacao: reviews(rating, status).avg(rating).filter(status.eq('approved')),
+        referencias: reviews(status).count().filter(status.eq('approved'))      
       `);
 
     // Se não for uma requisição admin, mantém o filtro de approved
@@ -78,6 +78,13 @@ const handleGet = async (req, res) => {
         message: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
       });
     }
+
+    // Formata os resultados para garantir que pontuacao e referencias estejam corretos
+    const formattedData = data.map(prof => ({
+      ...prof,
+      pontuacao: Number(prof.pontuacao?.[0]?.avg || 0).toFixed(1),
+      referencias: prof.referencias?.[0]?.count || 0
+    }));
 
     console.log(`Retornados ${data?.length || 0} profissionais`);
     return res.status(200).json(data);

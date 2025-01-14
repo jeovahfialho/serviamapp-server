@@ -79,12 +79,46 @@ const handleGet = async (req, res) => {
       });
     }
 
-    // Formata os resultados para garantir que pontuacao e referencias estejam corretos
-    const formattedData = data.map(prof => ({
-      ...prof,
-      pontuacao: Number(prof.pontuacao?.[0]?.avg || 0).toFixed(1),
-      referencias: prof.referencias?.[0]?.count || 0
-    }));
+    // Agora vamos calcular a média e contagem manualmente
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from('reviews')
+      .select('prof_id, rating')
+      .eq('status', 'approved');
+
+    if (reviewsError) {
+      console.error('Erro ao buscar reviews:', reviewsError);
+      return res.status(500).json({
+        error: 'Database error',
+        message: process.env.NODE_ENV === 'development' ? reviewsError.message : 'Erro interno'
+      });
+    }
+
+    // Agrupa os reviews por profissional
+    const reviewsByProf = reviewsData.reduce((acc, review) => {
+      if (!acc[review.prof_id]) {
+        acc[review.prof_id] = {
+          ratings: [],
+          count: 0
+        };
+      }
+      acc[review.prof_id].ratings.push(review.rating);
+      acc[review.prof_id].count++;
+      return acc;
+    }, {});
+
+    // Formata os dados dos profissionais com as médias calculadas
+    const formattedData = profissionais.map(prof => {
+      const profReviews = reviewsByProf[prof.id] || { ratings: [], count: 0 };
+      const avgRating = profReviews.ratings.length > 0
+        ? profReviews.ratings.reduce((a, b) => a + b, 0) / profReviews.ratings.length
+        : 0;
+
+      return {
+        ...prof,
+        pontuacao: Number(avgRating).toFixed(1),
+        referencias: profReviews.count
+      };
+    });
 
     console.log(`Retornados ${data?.length || 0} profissionais`);
     return res.status(200).json(data);

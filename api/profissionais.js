@@ -17,6 +17,72 @@ const setCorsHeaders = (res) => {
   });
 };
 
+const handleGetSingle = async (req, res) => {
+  const { id } = req.query;
+
+  if (!id) {
+    return res.status(400).json({
+      error: 'Missing id',
+      message: 'ID do profissional é obrigatório'
+    });
+  }
+
+  try {
+    // Buscar o profissional específico
+    const { data: profissional, error: profError } = await supabase
+      .from('profissionais')
+      .select('*')
+      .eq('id', id)
+      .eq('status', 'approved')
+      .single();
+
+    if (profError) {
+      console.error('Erro ao buscar profissional:', profError);
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Profissional não encontrado'
+      });
+    }
+
+    // Buscar reviews deste profissional
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('prof_id', id)
+      .eq('status', 'approved');
+
+    if (reviewsError) {
+      console.error('Erro ao buscar reviews:', reviewsError);
+      return res.status(500).json({
+        error: 'Database error',
+        message: 'Erro ao buscar avaliações'
+      });
+    }
+
+    // Calcular média das avaliações
+    const ratings = reviewsData.map(review => review.rating);
+    const avgRating = ratings.length > 0
+      ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+      : 0;
+
+    // Retornar profissional com dados agregados
+    const formattedProfissional = {
+      ...profissional,
+      pontuacao: Number(avgRating).toFixed(1),
+      referencias: ratings.length,
+      reviews: reviewsData
+    };
+
+    return res.status(200).json(formattedProfissional);
+  } catch (error) {
+    console.error('Erro no handleGetSingle:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
 // Handlers específicos para cada método
 const handleGet = async (req, res) => {
   try {
@@ -213,6 +279,11 @@ module.exports = async (req, res) => {
   try {
     switch (req.method) {
       case 'GET':
+        // Se tiver um ID específico na query, usa o handleGetSingle
+        if (req.query.id) {
+          return await handleGetSingle(req, res);
+        }
+        // Caso contrário, usa o handleGet normal
         return await handleGet(req, res);
       case 'POST':
         return await handlePost(req, res);

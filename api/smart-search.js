@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
     console.log('Calling ChatGPT API...');
 
     const openai = new OpenAI({
-      apiKey: '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'
+      apiKey: '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'
     });
 
     const completion = await openai.chat.completions.create({

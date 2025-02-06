@@ -45,8 +45,8 @@ export default async function handler(req, res) {
 
     console.log(`Found ${professionals.length} approved professionals`);
 
-    console.log('Calling DeepSeek API through server...');
-    const response = await fetch('https://serviamapp-server.vercel.app/api/smart-search', {
+    console.log('Calling DeepSeek API...');
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

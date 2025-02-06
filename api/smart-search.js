@@ -1,8 +1,27 @@
 // pages/api/smart-search.js
 import { supabase } from '../../lib/db';
 
+const corsHeaders = {
+  'Access-Control-Allow-Credentials': true,
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,OPTIONS,POST,PUT,DELETE,PATCH',
+  'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+};
+
+const setCorsHeaders = (res) => {
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+};
+
 export default async function handler(req, res) {
   console.log(`[${new Date().toISOString()}] Smart Search API called - Method: ${req.method}`);
+  
+  setCorsHeaders(res);
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method !== 'POST') {
     console.log('Method not allowed:', req.method);
@@ -38,13 +57,18 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: 'Analyze professionals based on user query. Return array of matching professional IDs.'
+            content: `You are a professional matching assistant for a healthcare platform. 
+                     Analyze the user query and the provided professionals list.
+                     Return only an array of professional IDs that best match the query.
+                     Consider specializations, expertise areas, and descriptions.
+                     Format response as valid JSON array of IDs.`
           },
           {
             role: 'user',
             content: `Query: ${prompt}\nProfessionals: ${JSON.stringify(professionals)}`
           }
-        ]
+        ],
+        temperature: 0.3
       })
     });
 
@@ -58,7 +82,11 @@ export default async function handler(req, res) {
     const results = professionals.filter(p => matchedIds.includes(p.id));
     console.log(`Returning ${results.length} matching professionals`);
 
-    return res.status(200).json({ professionals: results });
+    return res.status(200).json({ 
+      professionals: results,
+      total: results.length,
+      aiResponse: process.env.NODE_ENV === 'development' ? aiData : undefined
+    });
   } catch (error) {
     console.error('Search error:', error);
     return res.status(500).json({ 

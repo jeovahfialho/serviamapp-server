@@ -1,8 +1,9 @@
+require('dotenv').config();
 const OpenAI = require('openai');
 
 const testOpenAI = async () => {
   const openai = new OpenAI({
-    apiKey: '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'
+    apiKey: process.env.OPENAI_API_KEY
   });
 
   try {

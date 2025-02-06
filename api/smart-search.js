@@ -1,23 +1,15 @@
-// pages/api/smart-search.js
-import { supabase } from '../../lib/db';
-import OpenAI from "openai";
+// api/smart-search.js
+require('dotenv').config();
+const { supabase } = require('../lib/db');
+const OpenAI = require('openai');
 
-const corsHeaders = {
-  'Access-Control-Allow-Credentials': true,
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,OPTIONS,POST,PUT,DELETE,PATCH',
-  'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
-};
-
-const setCorsHeaders = (res) => {
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    res.setHeader(key, value);
-  });
-};
-
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   console.log(`[${new Date().toISOString()}] Smart Search API called - Method: ${req.method}`);
-  setCorsHeaders(res);
+  
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -44,12 +36,12 @@ export default async function handler(req, res) {
     }
 
     console.log(`Found ${professionals.length} approved professionals`);
+    console.log('Calling ChatGPT API...');
 
     const openai = new OpenAI({
       apiKey: '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'
     });
 
-    console.log('Calling ChatGPT API...');
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -83,4 +75,4 @@ export default async function handler(req, res) {
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
-}
+};

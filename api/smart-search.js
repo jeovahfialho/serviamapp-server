@@ -20,9 +20,6 @@ module.exports = async (req, res) => {
   console.log(`[${new Date().toISOString()}] Smart Search API called - Method: ${req.method}`);
   setCorsHeaders(res);
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
 
   if (req.method !== 'POST') {
     console.log('Method not allowed:', req.method);

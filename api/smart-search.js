@@ -37,47 +37,65 @@ module.exports = async (req, res) => {
       throw new Error('Error fetching professionals from Supabase');
     }
 
-    console.log(`Found ${professionals.length} approved professionals`);
     console.log('Calling OpenAI API...');
-
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: "You are a professional matching assistant. Analyze the user query and the provided professionals list. Return only an array of professional IDs that best match the query. Consider specializations, expertise areas, and descriptions. Return only a valid JSON array of IDs."
+          content: `You are a professional matching assistant. Analyze the user query and the provided professionals list. 
+          Return a JSON object with two keys:
+          1. 'matchedIds': An array of professional IDs that best match the query
+          2. 'matchReasons': An object where keys are professional IDs and values are concise match explanations
+
+          Consider:
+          - Specializations
+          - Expertise areas
+          - Descriptions
+          - Direct relevance to the query
+
+          Provide a clear, specific reason for each matched professional.`
         },
         {
           role: "user",
-          content: `Query: ${prompt}\nProfessionals: ${JSON.stringify(professionals)}`
+          content: `Query: ${prompt}\n\nProfessionals: ${JSON.stringify(professionals.map(p => ({
+            id: p.id,
+            nome: p.nome,
+            tipo: p.tipo,
+            especializacao: p.especializacao,
+            atuacao: p.atuacao
+          })))}`
         }
       ]
     });
 
     console.log('OpenAI response received:', completion);
 
-    let matchedIds = [];
+    let parsedResponse;
     try {
-      console.log('Parsing OpenAI response...');
-      matchedIds = JSON.parse(completion.choices[0].message.content);
-      console.log('Parsed matched IDs:', matchedIds);
+      parsedResponse = JSON.parse(completion.choices[0].message.content);
+      console.log('Parsed response:', parsedResponse);
     } catch (parseError) {
       console.error('Error parsing OpenAI response:', parseError);
       throw new Error('Invalid JSON from OpenAI response');
     }
 
-    const results = professionals.filter(p => matchedIds.includes(p.id));
-    console.log(`Returning ${results.length} matching professionals`);
+    const { matchedIds, matchReasons } = parsedResponse;
 
+    const results = professionals.filter(p => matchedIds.includes(p.id));
+    
     return res.status(200).json({
       professionals: results,
+      matchReasons: matchReasons || {},
       total: results.length,
       aiResponse: process.env.NODE_ENV === 'development' ? completion : undefined
     });
+
   } catch (error) {
     console.error('Error during search process:', error);
     return res.status(500).json({

@@ -46,33 +46,38 @@ module.exports = async (req, res) => {
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
       messages: [
-        {
-          role: "system",
-          content: `You are a professional matching assistant. Analyze the user query and the provided professionals list. 
-          Return a JSON object with two keys:
-          1. 'matchedIds': An array of professional IDs that best match the query
-          2. 'matchReasons': An object where keys are professional IDs and values are concise match explanations
-
-          Consider:
-          - Specializations
-          - Expertise areas
-          - Descriptions
-          - Direct relevance to the query
-
-          Provide a clear, specific reason for each matched professional.`
-        },
-        {
-          role: "user",
-          content: `Query: ${prompt}\n\nProfessionals: ${JSON.stringify(professionals.map(p => ({
-            id: p.id,
-            nome: p.nome,
-            tipo: p.tipo,
-            especializacao: p.especializacao,
-            atuacao: p.atuacao
-          })))}`
-        }
+      {
+      role: "system",
+      content: `Você é um assistente de correspondência de profissionais. Analise a consulta do usuário e a lista de profissionais fornecida.
+     
+      INSTRUÇÕES IMPORTANTES:
+      - SEMPRE responda em PORTUGUÊS
+      - Retorne um objeto JSON com duas chaves:
+        1. 'matchedIds': Uma matriz de IDs de profissionais que melhor correspondem à consulta
+        2. 'matchReasons': Um objeto onde as chaves são IDs de profissionais e os valores são explicações sucintas de correspondência
+     
+      Considere:
+      - Especializações
+      - Áreas de expertise
+      - Descrições
+      - Relevância direta para a consulta
+     
+      Forneça um motivo claro e específico para cada profissional correspondente.
+      
+      ATENÇÃO: A resposta DEVE ser em PORTUGUÊS e em formato JSON válido.`
+      },
+      {
+      role: "user",
+      content: `Consulta: ${prompt}\n\nProfissionais: ${JSON.stringify(professionals.map(p => ({
+      id: p.id,
+      nome: p.nome,
+      tipo: p.tipo,
+      especializacao: p.especializacao,
+      atuacao: p.atuacao
+      })))}`
+      }
       ]
-    });
+     });
 
     console.log('OpenAI response received:', completion);
 

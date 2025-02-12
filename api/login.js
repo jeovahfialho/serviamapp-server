@@ -11,7 +11,8 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { telefone, password } = req.body;
-  console.log('Tentativa de login:', { telefone });
+  console.log('1. Tentativa de login:', { telefone });
+  console.log('2. Email formatado:', `${telefone}@temp.com`);
 
   try {
     // Tenta login com email formatado
@@ -20,14 +21,17 @@ module.exports = async (req, res) => {
       password
     });
 
-    if (error) throw error;
-
-    // Busca informações adicionais do usuário
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
-      data.user.id
-    );
-
-    if (userError) throw userError;
+    if (error) {
+      console.log('3. Erro no login:', error);
+      throw error;
+    }
+    
+    console.log('4. Dados do login:', {
+      user: data.user,
+      session: data.session,
+      metadata: data.user?.user_metadata,
+      appMetadata: data.user?.app_metadata
+    });
 
     // Opcional: Buscar dados adicionais da tabela profissionais se necessário
     const { data: profissional, error: profError } = await supabase
@@ -45,7 +49,8 @@ module.exports = async (req, res) => {
     });
 
   } catch (error) {
-    console.log('Erro completo:', error);
+    console.log('5. Erro completo:', error);
+    console.log('6. Stack trace:', error.stack);
     return res.status(401).json({
       error: 'Auth error',
       message: error.message || 'Credenciais inválidas'

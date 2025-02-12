@@ -12,48 +12,42 @@ module.exports = async (req, res) => {
 
   const { telefone, password } = req.body;
   console.log('Tentativa de login:', { telefone });
-  
 
   try {
-    // Log profissional
-    const { data: profissional, error: profError } = await supabase
-      .from('profissionais')
-      .select('*')
-      .eq('telefone', telefone)
-      .single();
- 
-    console.log('Profissional encontrado:', profissional);
-    if (profError) console.log('Erro busca profissional:', profError);
- 
-    if (!profissional) {
-      return res.status(401).json({
-        error: 'Auth error',
-        message: 'Profissional não encontrado'
-      });
-    }
- 
-    // Tenta login
+    // Tenta login com email formatado
     const { data, error } = await supabase.auth.signInWithPassword({
       email: `${telefone}@temp.com`,
       password
     });
- 
-    console.log('Resposta auth:', { data, error });
- 
+
     if (error) throw error;
- 
+
+    // Busca informações adicionais do usuário
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
+      data.user.id
+    );
+
+    if (userError) throw userError;
+
+    // Opcional: Buscar dados adicionais da tabela profissionais se necessário
+    const { data: profissional, error: profError } = await supabase
+      .from('profissionais')
+      .select('status, outros_campos')  // Especifique os campos necessários
+      .eq('user_id', data.user.id)
+      .single();
+
     return res.json({
       token: data.session.access_token,
       user: {
         ...data.user,
-        ...profissional
+        ...(profissional || {})  // Inclui dados do profissional se existirem
       }
     });
- 
+
   } catch (error) {
     console.log('Erro completo:', error);
     return res.status(401).json({
-      error: 'Auth error', 
+      error: 'Auth error',
       message: error.message || 'Credenciais inválidas'
     });
   }
